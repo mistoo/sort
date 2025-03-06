@@ -10,8 +10,8 @@
 #define SORT_TYPE int64_t
 #define MAX(x,y) (((x) > (y) ? (x) : (y)))
 #define MIN(x,y) (((x) < (y) ? (x) : (y)))
-#define SORT_CMP(x, y) ((x) - (y))
-#define SORT_CSWAP(x, y) {SORT_TYPE _sort_swap_temp = MAX((x), (y)); (x) = MIN((x),(y)); (y) = _sort_swap_temp;}
+/* #define SORT_CMP(x, y) ((x) - (y)) */
+#define SORT_CSWAP(compare, x, y) {SORT_TYPE _sort_swap_temp = MAX((x), (y)); (x) = MIN((x),(y)); (y) = _sort_swap_temp;}
 #ifdef SET_SORT_EXTRA
 #define SORT_EXTRA
 #endif
@@ -29,6 +29,12 @@ size_t sizes[SIZES] = {100000};
 static __inline int simple_cmp(const void *a, const void *b) {
   const int64_t da = *((const int64_t *) a);
   const int64_t db = *((const int64_t *) b);
+  return (da < db) ? -1 : (da == db) ? 0 : 1;
+}
+
+static __inline int simple_compare(const void *a, const void *b) {
+  const int64_t da = ((const int64_t) a);
+  const int64_t db = ((const int64_t) b);
   return (da < db) ? -1 : (da == db) ? 0 : 1;
 }
 
@@ -87,7 +93,7 @@ void platform_name(char *output) {
   capitalize(#name, capital_word); \
   for (test = 0; test < SIZES; test++) { \
     int64_t size = sizes[test]; \
-    int64_t *dst = (int64_t *) malloc(sizeof(int64_t) * size); \
+    int64_t *dst = (int64_t *) malloc(sizeof(int64_t) * size);  \
     diff = 0; \
     iter = 0; \
     while (1) { \
@@ -117,7 +123,7 @@ void platform_name(char *output) {
     while (1) { \
       fill_random(dst, size); \
       usec1 = utime(); \
-      sorter_ ## name (dst, size); \
+      sorter_ ## name (dst, size, simple_compare); \
       usec2 = utime(); \
       diff += usec2 - usec1; \
       iter++; \

@@ -5,11 +5,15 @@ CC ?= gcc
 CFLAGS ?= -O3 -g -Wall -std=c89 -pedantic -Wno-long-long -Wno-format
 EXTRA = -DSET_SORT_EXTRA
 
-default: benchmark demo multidemo stresstest test benchmark_extra demo_extra multidemo_extra stresstest_extra
+default: benchmark demo multidemo stresstest test # benchmark_extra demo_extra multidemo_extra stresstest_extra
 
 .PHONY: default clean test format
 
-test: stresstest_extra benchmark_extra
+test: stresstest benchmark
+	./benchmark | tee benchmark.txt
+	./stresstest
+
+test_extra: stresstest_extra benchmark_extra
 	./benchmark_extra | tee benchmark.txt
 	./stresstest_extra
 

@@ -13,7 +13,7 @@
 #define SORT_CMP(x, y)  ((x) < (y) ? -1 : ((x) == (y) ? 0 : 1))
    but the one below is often faster for integer types.
 */
-#define SORT_CMP(x, y) (x - y)
+/* #define SORT_CMP(x, y) (x - y) */
 #ifdef SET_SORT_EXTRA
 #define SORT_EXTRA
 #endif
@@ -42,7 +42,7 @@
 #define SORT_CMP(x, y)  ((x) > (y) ? -1 : ((x) == (y) ? 0 : 1))
    but the one below is often faster for integer types.
 */
-#define SORT_CMP(x, y) (y - x)
+/* #define SORT_CMP(x, y) (y - x) */
 #ifdef SET_SORT_EXTRA
 #define SORT_EXTRA
 #endif
@@ -130,6 +130,19 @@ static __inline int simple_cmp2(const void *a, const void *b) {
   return (da > db) ? -1 : (da == db) ? 0 : 1;
 }
 
+static __inline int simple_compare(const void *a, const void *b) {
+  const int64_t da = ((const int64_t) a);
+  const int64_t db = ((const int64_t) b);
+  return (da < db) ? -1 : (da == db) ? 0 : 1;
+}
+
+static __inline int simple_compare2(const void *a, const void *b) {
+  const int64_t da = ((const int64_t) a);
+  const int64_t db = ((const int64_t) b);
+  return (da < db) ? -1 : (da == db) ? 0 : 1;
+}
+
+
 void run_tests(void) {
   int i;
   int64_t arr[SIZE];
@@ -189,7 +202,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_quick_sort(dst, SIZE);
+    sorter_quick_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -204,7 +217,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_selection_sort(dst, SIZE);
+    sorter_selection_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -218,7 +231,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_bubble_sort(dst, SIZE);
+    sorter_bubble_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -233,7 +246,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_merge_sort(dst, SIZE);
+    sorter_merge_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -247,7 +260,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_binary_insertion_sort(dst, SIZE);
+    sorter_binary_insertion_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -261,7 +274,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_heap_sort(dst, SIZE);
+    sorter_heap_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -275,7 +288,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_shell_sort(dst, SIZE);
+    sorter_shell_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -289,7 +302,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_tim_sort(dst, SIZE);
+    sorter_tim_sort(dst, SIZE, simple_compare);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -357,7 +370,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_quick_sort(dst, SIZE);
+    sorter2_quick_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);
@@ -372,7 +385,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_selection_sort(dst, SIZE);
+    sorter2_selection_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);
@@ -386,7 +399,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_bubble_sort(dst, SIZE);
+    sorter2_bubble_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);
@@ -401,7 +414,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_merge_sort(dst, SIZE);
+    sorter2_merge_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);
@@ -415,7 +428,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_binary_insertion_sort(dst, SIZE);
+    sorter2_binary_insertion_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);
@@ -429,7 +442,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_heap_sort(dst, SIZE);
+    sorter2_heap_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);
@@ -443,7 +456,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_shell_sort(dst, SIZE);
+    sorter2_shell_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);
@@ -457,7 +470,7 @@ void run_tests2(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter2_tim_sort(dst, SIZE);
+    sorter2_tim_sort(dst, SIZE, simple_compare2);
     end_time = utime();
     total_time += end_time - start_time;
     verify2(dst, SIZE);

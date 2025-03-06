@@ -1,3 +1,5 @@
+/* This is modified version with comparator function as sort argument */
+
 /* Copyright (c) 2010-2024 Christopher Swenson. */
 /* Copyright (c) 2012 Vojtech Fried. */
 /* Copyright (c) 2012 Google Inc. All Rights Reserved. */
@@ -15,8 +17,9 @@
 #error "Must declare SORT_TYPE"
 #endif
 
-#ifndef SORT_CMP
-#define SORT_CMP(x, y)  ((x) < (y) ? -1 : ((y) < (x) ? 1 : 0))
+#ifdef SORT_CMP
+#warning "SORT_CMP must not be declared, pass comparator as *sort() argument"
+#undef SORT_CMP
 #endif
 
 #ifndef SORT_DEF
@@ -195,6 +198,11 @@ static __inline size_t rbnd(size_t len) {
 #define TEMP_STORAGE_T                 SORT_MAKE_STR(temp_storage_t)
 #define PUSH_NEXT                      SORT_MAKE_STR(push_next)
 
+#ifndef SORT_COMPARE
+typedef int (*sort_compare_t) (const void *, const void *);
+#define SORT_COMPARE(x, y) compare((const void *)(x), (const void *)(y))
+#endif
+
 #ifndef MAX
 #define MAX(x,y) (((x) > (y) ? (x) : (y)))
 #endif
@@ -202,23 +210,23 @@ static __inline size_t rbnd(size_t len) {
 #define MIN(x,y) (((x) < (y) ? (x) : (y)))
 #endif
 #ifndef SORT_CSWAP
-#define SORT_CSWAP(x, y) { if(SORT_CMP((x),(y)) > 0) {SORT_SWAP((x),(y));}}
+#define SORT_CSWAP(compare, x, y) { if(SORT_COMPARE((x),(y)) > 0) {SORT_SWAP((x),(y));}}
 #endif
+
 
 typedef struct {
   size_t start;
   size_t length;
 } TIM_SORT_RUN_T;
 
-
-SORT_DEF void SHELL_SORT(SORT_TYPE *dst, const size_t size);
-SORT_DEF void BINARY_INSERTION_SORT(SORT_TYPE *dst, const size_t size);
-SORT_DEF void HEAP_SORT(SORT_TYPE *dst, const size_t size);
-SORT_DEF void QUICK_SORT(SORT_TYPE *dst, const size_t size);
-SORT_DEF void MERGE_SORT(SORT_TYPE *dst, const size_t size);
-SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t size);
-SORT_DEF void TIM_SORT(SORT_TYPE *dst, const size_t size);
-SORT_DEF void BITONIC_SORT(SORT_TYPE *dst, const size_t size);
+SORT_DEF void SHELL_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
+SORT_DEF void BINARY_INSERTION_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
+SORT_DEF void HEAP_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
+SORT_DEF void QUICK_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
+SORT_DEF void MERGE_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
+SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
+SORT_DEF void TIM_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
+SORT_DEF void BITONIC_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare);
 
 /* The full implementation of a bitonic sort is not here. Since we only want to use
    sorting networks for small length lists we create optimal sorting networks for
@@ -227,552 +235,552 @@ SORT_DEF void BITONIC_SORT(SORT_TYPE *dst, const size_t size);
    Optimal sorting networks for small length lists.
    Taken from https://pages.ripco.net/~jgamble/nw.html */
 #define BITONIC_SORT_2          SORT_MAKE_STR(bitonic_sort_2)
-static __inline void BITONIC_SORT_2(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
+static __inline void BITONIC_SORT_2(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
 }
 
 
 #define BITONIC_SORT_3          SORT_MAKE_STR(bitonic_sort_3)
-static __inline void BITONIC_SORT_3(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[0], dst[1]);
+static __inline void BITONIC_SORT_3(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[0], dst[1]);
 }
 
 
 #define BITONIC_SORT_4          SORT_MAKE_STR(bitonic_sort_4)
-static __inline void BITONIC_SORT_4(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[1], dst[2]);
+static __inline void BITONIC_SORT_4(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
 }
 
 
 #define BITONIC_SORT_5          SORT_MAKE_STR(bitonic_sort_5)
-static __inline void BITONIC_SORT_5(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[0], dst[3]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[1], dst[2]);
+static __inline void BITONIC_SORT_5(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[0], dst[3]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
 }
 
 
 #define BITONIC_SORT_6          SORT_MAKE_STR(bitonic_sort_6)
-static __inline void BITONIC_SORT_6(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[2], dst[5]);
-  SORT_CSWAP(dst[0], dst[3]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[2], dst[3]);
+static __inline void BITONIC_SORT_6(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[2], dst[5]);
+  SORT_CSWAP(compare, dst[0], dst[3]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
 }
 
 
 #define BITONIC_SORT_7          SORT_MAKE_STR(bitonic_sort_7)
-static __inline void BITONIC_SORT_7(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[0], dst[3]);
-  SORT_CSWAP(dst[2], dst[5]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[2], dst[3]);
+static __inline void BITONIC_SORT_7(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[0], dst[3]);
+  SORT_CSWAP(compare, dst[2], dst[5]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
 }
 
 
 #define BITONIC_SORT_8          SORT_MAKE_STR(bitonic_sort_8)
-static __inline void BITONIC_SORT_8(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[3], dst[7]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[3], dst[6]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[3], dst[4]);
+static __inline void BITONIC_SORT_8(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[3], dst[7]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[3], dst[6]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
 }
 
 
 #define BITONIC_SORT_9          SORT_MAKE_STR(bitonic_sort_9)
-static __inline void BITONIC_SORT_9(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[7], dst[8]);
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[2], dst[5]);
-  SORT_CSWAP(dst[0], dst[3]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[5], dst[8]);
-  SORT_CSWAP(dst[3], dst[6]);
-  SORT_CSWAP(dst[4], dst[7]);
-  SORT_CSWAP(dst[2], dst[5]);
-  SORT_CSWAP(dst[0], dst[3]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[2], dst[3]);
+static __inline void BITONIC_SORT_9(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[2], dst[5]);
+  SORT_CSWAP(compare, dst[0], dst[3]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[8]);
+  SORT_CSWAP(compare, dst[3], dst[6]);
+  SORT_CSWAP(compare, dst[4], dst[7]);
+  SORT_CSWAP(compare, dst[2], dst[5]);
+  SORT_CSWAP(compare, dst[0], dst[3]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
 }
 
 
 #define BITONIC_SORT_10          SORT_MAKE_STR(bitonic_sort_10)
-static __inline void BITONIC_SORT_10(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[4], dst[9]);
-  SORT_CSWAP(dst[3], dst[8]);
-  SORT_CSWAP(dst[2], dst[7]);
-  SORT_CSWAP(dst[1], dst[6]);
-  SORT_CSWAP(dst[0], dst[5]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[6], dst[9]);
-  SORT_CSWAP(dst[0], dst[3]);
-  SORT_CSWAP(dst[5], dst[8]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[3], dst[6]);
-  SORT_CSWAP(dst[7], dst[9]);
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[7], dst[8]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[2], dst[5]);
-  SORT_CSWAP(dst[6], dst[8]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[4], dst[7]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[4], dst[5]);
+static __inline void BITONIC_SORT_10(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[4], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[8]);
+  SORT_CSWAP(compare, dst[2], dst[7]);
+  SORT_CSWAP(compare, dst[1], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[5]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[6], dst[9]);
+  SORT_CSWAP(compare, dst[0], dst[3]);
+  SORT_CSWAP(compare, dst[5], dst[8]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[3], dst[6]);
+  SORT_CSWAP(compare, dst[7], dst[9]);
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[2], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[7]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
 }
 
 
 #define BITONIC_SORT_11          SORT_MAKE_STR(bitonic_sort_11)
-static __inline void BITONIC_SORT_11(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[8], dst[10]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[3], dst[7]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[6], dst[10]);
-  SORT_CSWAP(dst[4], dst[8]);
-  SORT_CSWAP(dst[5], dst[9]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[3], dst[8]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[6], dst[10]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[7], dst[10]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[6], dst[8]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[7], dst[9]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[7], dst[8]);
+static __inline void BITONIC_SORT_11(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[8], dst[10]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[3], dst[7]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[10]);
+  SORT_CSWAP(compare, dst[4], dst[8]);
+  SORT_CSWAP(compare, dst[5], dst[9]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[3], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[10]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[10]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[8]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[9]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
 }
 
 
 #define BITONIC_SORT_12          SORT_MAKE_STR(bitonic_sort_12)
-static __inline void BITONIC_SORT_12(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[10], dst[11]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[9], dst[11]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[8], dst[10]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[7], dst[11]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[6], dst[10]);
-  SORT_CSWAP(dst[3], dst[7]);
-  SORT_CSWAP(dst[4], dst[8]);
-  SORT_CSWAP(dst[5], dst[9]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[7], dst[11]);
-  SORT_CSWAP(dst[3], dst[8]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[6], dst[10]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[7], dst[10]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[6], dst[8]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[7], dst[9]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[7], dst[8]);
+static __inline void BITONIC_SORT_12(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[10], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[9], dst[11]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[8], dst[10]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[10]);
+  SORT_CSWAP(compare, dst[3], dst[7]);
+  SORT_CSWAP(compare, dst[4], dst[8]);
+  SORT_CSWAP(compare, dst[5], dst[9]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[11]);
+  SORT_CSWAP(compare, dst[3], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[10]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[10]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[8]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[9]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
 }
 
 
 #define BITONIC_SORT_13          SORT_MAKE_STR(bitonic_sort_13)
-static __inline void BITONIC_SORT_13(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[1], dst[7]);
-  SORT_CSWAP(dst[9], dst[11]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[8]);
-  SORT_CSWAP(dst[0], dst[12]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[8], dst[11]);
-  SORT_CSWAP(dst[7], dst[12]);
-  SORT_CSWAP(dst[5], dst[9]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[3], dst[7]);
-  SORT_CSWAP(dst[10], dst[11]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[6], dst[12]);
-  SORT_CSWAP(dst[7], dst[8]);
-  SORT_CSWAP(dst[11], dst[12]);
-  SORT_CSWAP(dst[4], dst[9]);
-  SORT_CSWAP(dst[6], dst[10]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[10], dst[11]);
-  SORT_CSWAP(dst[1], dst[7]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[9], dst[11]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[4], dst[7]);
-  SORT_CSWAP(dst[8], dst[10]);
-  SORT_CSWAP(dst[0], dst[5]);
-  SORT_CSWAP(dst[2], dst[5]);
-  SORT_CSWAP(dst[6], dst[8]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[7], dst[8]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
+static __inline void BITONIC_SORT_13(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[1], dst[7]);
+  SORT_CSWAP(compare, dst[9], dst[11]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[8]);
+  SORT_CSWAP(compare, dst[0], dst[12]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[8], dst[11]);
+  SORT_CSWAP(compare, dst[7], dst[12]);
+  SORT_CSWAP(compare, dst[5], dst[9]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[3], dst[7]);
+  SORT_CSWAP(compare, dst[10], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[6], dst[12]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
+  SORT_CSWAP(compare, dst[11], dst[12]);
+  SORT_CSWAP(compare, dst[4], dst[9]);
+  SORT_CSWAP(compare, dst[6], dst[10]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[10], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[7]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[9], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[10]);
+  SORT_CSWAP(compare, dst[0], dst[5]);
+  SORT_CSWAP(compare, dst[2], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[8]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
 }
 
 
 #define BITONIC_SORT_14          SORT_MAKE_STR(bitonic_sort_14)
-static __inline void BITONIC_SORT_14(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[10], dst[11]);
-  SORT_CSWAP(dst[12], dst[13]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[8], dst[10]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[9], dst[11]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[8], dst[12]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[9], dst[13]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[3], dst[7]);
-  SORT_CSWAP(dst[0], dst[8]);
-  SORT_CSWAP(dst[1], dst[9]);
-  SORT_CSWAP(dst[2], dst[10]);
-  SORT_CSWAP(dst[3], dst[11]);
-  SORT_CSWAP(dst[4], dst[12]);
-  SORT_CSWAP(dst[5], dst[13]);
-  SORT_CSWAP(dst[5], dst[10]);
-  SORT_CSWAP(dst[6], dst[9]);
-  SORT_CSWAP(dst[3], dst[12]);
-  SORT_CSWAP(dst[7], dst[11]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[4], dst[8]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[7], dst[13]);
-  SORT_CSWAP(dst[2], dst[8]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[11], dst[13]);
-  SORT_CSWAP(dst[3], dst[8]);
-  SORT_CSWAP(dst[7], dst[12]);
-  SORT_CSWAP(dst[6], dst[8]);
-  SORT_CSWAP(dst[10], dst[12]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[7], dst[9]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[7], dst[8]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[11], dst[12]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
+static __inline void BITONIC_SORT_14(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[10], dst[11]);
+  SORT_CSWAP(compare, dst[12], dst[13]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[8], dst[10]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[9], dst[11]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[8], dst[12]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[9], dst[13]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[3], dst[7]);
+  SORT_CSWAP(compare, dst[0], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[9]);
+  SORT_CSWAP(compare, dst[2], dst[10]);
+  SORT_CSWAP(compare, dst[3], dst[11]);
+  SORT_CSWAP(compare, dst[4], dst[12]);
+  SORT_CSWAP(compare, dst[5], dst[13]);
+  SORT_CSWAP(compare, dst[5], dst[10]);
+  SORT_CSWAP(compare, dst[6], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[12]);
+  SORT_CSWAP(compare, dst[7], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[13]);
+  SORT_CSWAP(compare, dst[2], dst[8]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[11], dst[13]);
+  SORT_CSWAP(compare, dst[3], dst[8]);
+  SORT_CSWAP(compare, dst[7], dst[12]);
+  SORT_CSWAP(compare, dst[6], dst[8]);
+  SORT_CSWAP(compare, dst[10], dst[12]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[7], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[11], dst[12]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
 }
 
 
 #define BITONIC_SORT_15          SORT_MAKE_STR(bitonic_sort_15)
-static __inline void BITONIC_SORT_15(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[10], dst[11]);
-  SORT_CSWAP(dst[12], dst[13]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[8], dst[10]);
-  SORT_CSWAP(dst[12], dst[14]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[9], dst[11]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[8], dst[12]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[9], dst[13]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[10], dst[14]);
-  SORT_CSWAP(dst[3], dst[7]);
-  SORT_CSWAP(dst[0], dst[8]);
-  SORT_CSWAP(dst[1], dst[9]);
-  SORT_CSWAP(dst[2], dst[10]);
-  SORT_CSWAP(dst[3], dst[11]);
-  SORT_CSWAP(dst[4], dst[12]);
-  SORT_CSWAP(dst[5], dst[13]);
-  SORT_CSWAP(dst[6], dst[14]);
-  SORT_CSWAP(dst[5], dst[10]);
-  SORT_CSWAP(dst[6], dst[9]);
-  SORT_CSWAP(dst[3], dst[12]);
-  SORT_CSWAP(dst[13], dst[14]);
-  SORT_CSWAP(dst[7], dst[11]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[4], dst[8]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[7], dst[13]);
-  SORT_CSWAP(dst[2], dst[8]);
-  SORT_CSWAP(dst[11], dst[14]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[11], dst[13]);
-  SORT_CSWAP(dst[3], dst[8]);
-  SORT_CSWAP(dst[7], dst[12]);
-  SORT_CSWAP(dst[6], dst[8]);
-  SORT_CSWAP(dst[10], dst[12]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[7], dst[9]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[7], dst[8]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[11], dst[12]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
+static __inline void BITONIC_SORT_15(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[10], dst[11]);
+  SORT_CSWAP(compare, dst[12], dst[13]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[8], dst[10]);
+  SORT_CSWAP(compare, dst[12], dst[14]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[9], dst[11]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[8], dst[12]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[9], dst[13]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[10], dst[14]);
+  SORT_CSWAP(compare, dst[3], dst[7]);
+  SORT_CSWAP(compare, dst[0], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[9]);
+  SORT_CSWAP(compare, dst[2], dst[10]);
+  SORT_CSWAP(compare, dst[3], dst[11]);
+  SORT_CSWAP(compare, dst[4], dst[12]);
+  SORT_CSWAP(compare, dst[5], dst[13]);
+  SORT_CSWAP(compare, dst[6], dst[14]);
+  SORT_CSWAP(compare, dst[5], dst[10]);
+  SORT_CSWAP(compare, dst[6], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[12]);
+  SORT_CSWAP(compare, dst[13], dst[14]);
+  SORT_CSWAP(compare, dst[7], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[13]);
+  SORT_CSWAP(compare, dst[2], dst[8]);
+  SORT_CSWAP(compare, dst[11], dst[14]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[11], dst[13]);
+  SORT_CSWAP(compare, dst[3], dst[8]);
+  SORT_CSWAP(compare, dst[7], dst[12]);
+  SORT_CSWAP(compare, dst[6], dst[8]);
+  SORT_CSWAP(compare, dst[10], dst[12]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[7], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[11], dst[12]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
 }
 
 
 #define BITONIC_SORT_16          SORT_MAKE_STR(bitonic_sort_16)
-static __inline void BITONIC_SORT_16(SORT_TYPE *dst) {
-  SORT_CSWAP(dst[0], dst[1]);
-  SORT_CSWAP(dst[2], dst[3]);
-  SORT_CSWAP(dst[4], dst[5]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
-  SORT_CSWAP(dst[10], dst[11]);
-  SORT_CSWAP(dst[12], dst[13]);
-  SORT_CSWAP(dst[14], dst[15]);
-  SORT_CSWAP(dst[0], dst[2]);
-  SORT_CSWAP(dst[4], dst[6]);
-  SORT_CSWAP(dst[8], dst[10]);
-  SORT_CSWAP(dst[12], dst[14]);
-  SORT_CSWAP(dst[1], dst[3]);
-  SORT_CSWAP(dst[5], dst[7]);
-  SORT_CSWAP(dst[9], dst[11]);
-  SORT_CSWAP(dst[13], dst[15]);
-  SORT_CSWAP(dst[0], dst[4]);
-  SORT_CSWAP(dst[8], dst[12]);
-  SORT_CSWAP(dst[1], dst[5]);
-  SORT_CSWAP(dst[9], dst[13]);
-  SORT_CSWAP(dst[2], dst[6]);
-  SORT_CSWAP(dst[10], dst[14]);
-  SORT_CSWAP(dst[3], dst[7]);
-  SORT_CSWAP(dst[11], dst[15]);
-  SORT_CSWAP(dst[0], dst[8]);
-  SORT_CSWAP(dst[1], dst[9]);
-  SORT_CSWAP(dst[2], dst[10]);
-  SORT_CSWAP(dst[3], dst[11]);
-  SORT_CSWAP(dst[4], dst[12]);
-  SORT_CSWAP(dst[5], dst[13]);
-  SORT_CSWAP(dst[6], dst[14]);
-  SORT_CSWAP(dst[7], dst[15]);
-  SORT_CSWAP(dst[5], dst[10]);
-  SORT_CSWAP(dst[6], dst[9]);
-  SORT_CSWAP(dst[3], dst[12]);
-  SORT_CSWAP(dst[13], dst[14]);
-  SORT_CSWAP(dst[7], dst[11]);
-  SORT_CSWAP(dst[1], dst[2]);
-  SORT_CSWAP(dst[4], dst[8]);
-  SORT_CSWAP(dst[1], dst[4]);
-  SORT_CSWAP(dst[7], dst[13]);
-  SORT_CSWAP(dst[2], dst[8]);
-  SORT_CSWAP(dst[11], dst[14]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[2], dst[4]);
-  SORT_CSWAP(dst[11], dst[13]);
-  SORT_CSWAP(dst[3], dst[8]);
-  SORT_CSWAP(dst[7], dst[12]);
-  SORT_CSWAP(dst[6], dst[8]);
-  SORT_CSWAP(dst[10], dst[12]);
-  SORT_CSWAP(dst[3], dst[5]);
-  SORT_CSWAP(dst[7], dst[9]);
-  SORT_CSWAP(dst[3], dst[4]);
-  SORT_CSWAP(dst[5], dst[6]);
-  SORT_CSWAP(dst[7], dst[8]);
-  SORT_CSWAP(dst[9], dst[10]);
-  SORT_CSWAP(dst[11], dst[12]);
-  SORT_CSWAP(dst[6], dst[7]);
-  SORT_CSWAP(dst[8], dst[9]);
+static __inline void BITONIC_SORT_16(SORT_TYPE *dst, sort_compare_t compare) {
+  SORT_CSWAP(compare, dst[0], dst[1]);
+  SORT_CSWAP(compare, dst[2], dst[3]);
+  SORT_CSWAP(compare, dst[4], dst[5]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
+  SORT_CSWAP(compare, dst[10], dst[11]);
+  SORT_CSWAP(compare, dst[12], dst[13]);
+  SORT_CSWAP(compare, dst[14], dst[15]);
+  SORT_CSWAP(compare, dst[0], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[6]);
+  SORT_CSWAP(compare, dst[8], dst[10]);
+  SORT_CSWAP(compare, dst[12], dst[14]);
+  SORT_CSWAP(compare, dst[1], dst[3]);
+  SORT_CSWAP(compare, dst[5], dst[7]);
+  SORT_CSWAP(compare, dst[9], dst[11]);
+  SORT_CSWAP(compare, dst[13], dst[15]);
+  SORT_CSWAP(compare, dst[0], dst[4]);
+  SORT_CSWAP(compare, dst[8], dst[12]);
+  SORT_CSWAP(compare, dst[1], dst[5]);
+  SORT_CSWAP(compare, dst[9], dst[13]);
+  SORT_CSWAP(compare, dst[2], dst[6]);
+  SORT_CSWAP(compare, dst[10], dst[14]);
+  SORT_CSWAP(compare, dst[3], dst[7]);
+  SORT_CSWAP(compare, dst[11], dst[15]);
+  SORT_CSWAP(compare, dst[0], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[9]);
+  SORT_CSWAP(compare, dst[2], dst[10]);
+  SORT_CSWAP(compare, dst[3], dst[11]);
+  SORT_CSWAP(compare, dst[4], dst[12]);
+  SORT_CSWAP(compare, dst[5], dst[13]);
+  SORT_CSWAP(compare, dst[6], dst[14]);
+  SORT_CSWAP(compare, dst[7], dst[15]);
+  SORT_CSWAP(compare, dst[5], dst[10]);
+  SORT_CSWAP(compare, dst[6], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[12]);
+  SORT_CSWAP(compare, dst[13], dst[14]);
+  SORT_CSWAP(compare, dst[7], dst[11]);
+  SORT_CSWAP(compare, dst[1], dst[2]);
+  SORT_CSWAP(compare, dst[4], dst[8]);
+  SORT_CSWAP(compare, dst[1], dst[4]);
+  SORT_CSWAP(compare, dst[7], dst[13]);
+  SORT_CSWAP(compare, dst[2], dst[8]);
+  SORT_CSWAP(compare, dst[11], dst[14]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[2], dst[4]);
+  SORT_CSWAP(compare, dst[11], dst[13]);
+  SORT_CSWAP(compare, dst[3], dst[8]);
+  SORT_CSWAP(compare, dst[7], dst[12]);
+  SORT_CSWAP(compare, dst[6], dst[8]);
+  SORT_CSWAP(compare, dst[10], dst[12]);
+  SORT_CSWAP(compare, dst[3], dst[5]);
+  SORT_CSWAP(compare, dst[7], dst[9]);
+  SORT_CSWAP(compare, dst[3], dst[4]);
+  SORT_CSWAP(compare, dst[5], dst[6]);
+  SORT_CSWAP(compare, dst[7], dst[8]);
+  SORT_CSWAP(compare, dst[9], dst[10]);
+  SORT_CSWAP(compare, dst[11], dst[12]);
+  SORT_CSWAP(compare, dst[6], dst[7]);
+  SORT_CSWAP(compare, dst[8], dst[9]);
 }
 
-SORT_DEF void BITONIC_SORT(SORT_TYPE *dst, const size_t size) {
+SORT_DEF void BITONIC_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   switch (size) {
   case 0:
   case 1:
     break;
 
   case 2:
-    BITONIC_SORT_2(dst);
+    BITONIC_SORT_2(dst, compare);
     break;
 
   case 3:
-    BITONIC_SORT_3(dst);
+    BITONIC_SORT_3(dst, compare);
     break;
 
   case 4:
-    BITONIC_SORT_4(dst);
+    BITONIC_SORT_4(dst, compare);
     break;
 
   case 5:
-    BITONIC_SORT_5(dst);
+    BITONIC_SORT_5(dst, compare);
     break;
 
   case 6:
-    BITONIC_SORT_6(dst);
+    BITONIC_SORT_6(dst, compare);
     break;
 
   case 7:
-    BITONIC_SORT_7(dst);
+    BITONIC_SORT_7(dst, compare);
     break;
 
   case 8:
-    BITONIC_SORT_8(dst);
+    BITONIC_SORT_8(dst, compare);
     break;
 
   case 9:
-    BITONIC_SORT_9(dst);
+    BITONIC_SORT_9(dst, compare);
     break;
 
   case 10:
-    BITONIC_SORT_10(dst);
+    BITONIC_SORT_10(dst, compare);
     break;
 
   case 11:
-    BITONIC_SORT_11(dst);
+    BITONIC_SORT_11(dst, compare);
     break;
 
   case 12:
-    BITONIC_SORT_12(dst);
+    BITONIC_SORT_12(dst, compare);
     break;
 
   case 13:
-    BITONIC_SORT_13(dst);
+    BITONIC_SORT_13(dst, compare);
     break;
 
   case 14:
-    BITONIC_SORT_14(dst);
+    BITONIC_SORT_14(dst, compare);
     break;
 
   case 15:
-    BITONIC_SORT_15(dst);
+    BITONIC_SORT_15(dst, compare);
     break;
 
   case 16:
-    BITONIC_SORT_16(dst);
+    BITONIC_SORT_16(dst, compare);
     break;
 
   default:
-    BINARY_INSERTION_SORT(dst, size);
+    BINARY_INSERTION_SORT(dst, size, compare);
   }
 }
 
@@ -825,11 +833,10 @@ SORT_DEF void SORT_DELETE_BUFFER(SORT_TYPE* pointer) {
 #endif
 }
 
-
 /* Shell sort implementation based on Wikipedia article
    http://en.wikipedia.org/wiki/Shell_sort
 */
-SORT_DEF void SHELL_SORT(SORT_TYPE *dst, const size_t size) {
+SORT_DEF void SHELL_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   /* don't bother sorting an array of size 0 or 1 */
   /* TODO: binary search to find first gap? */
   int inci = 47;
@@ -849,7 +856,7 @@ SORT_DEF void SHELL_SORT(SORT_TYPE *dst, const size_t size) {
       SORT_TYPE temp = dst[i];
       size_t j = i;
 
-      while ((j >= inc) && (SORT_CMP(dst[j - inc], temp) > 0)) {
+      while ((j >= inc) && (SORT_COMPARE(dst[j - inc], temp) > 0)) {
         dst[j] = dst[j - inc];
         j -= inc;
       }
@@ -867,7 +874,7 @@ SORT_DEF void SHELL_SORT(SORT_TYPE *dst, const size_t size) {
 
 /* Function used to do a binary search for binary insertion sort */
 static __inline size_t BINARY_INSERTION_FIND(SORT_TYPE *dst, const SORT_TYPE x,
-    const size_t size) {
+    const size_t size, sort_compare_t compare) {
   size_t l, c, r;
   SORT_TYPE cx;
   l = 0;
@@ -875,16 +882,16 @@ static __inline size_t BINARY_INSERTION_FIND(SORT_TYPE *dst, const SORT_TYPE x,
   c = r >> 1;
 
   /* check for out of bounds at the beginning. */
-  if (SORT_CMP(x, dst[0]) < 0) {
+  if (SORT_COMPARE(x, dst[0]) < 0) {
     return 0;
-  } else if (SORT_CMP(x, dst[r]) > 0) {
+  } else if (SORT_COMPARE(x, dst[r]) > 0) {
     return r;
   }
 
   cx = dst[c];
 
   while (1) {
-    const int val = SORT_CMP(x, cx);
+    const int val = SORT_COMPARE(x, cx);
 
     if (val < 0) {
       if (c - l <= 1) {
@@ -906,7 +913,7 @@ static __inline size_t BINARY_INSERTION_FIND(SORT_TYPE *dst, const SORT_TYPE x,
 }
 
 /* Binary insertion sort, but knowing that the first "start" entries are sorted.  Used in timsort. */
-static void BINARY_INSERTION_SORT_START(SORT_TYPE *dst, const size_t start, const size_t size) {
+static void BINARY_INSERTION_SORT_START(SORT_TYPE *dst, const size_t start, const size_t size, sort_compare_t compare) {
   size_t i;
 
   for (i = start; i < size; i++) {
@@ -915,13 +922,13 @@ static void BINARY_INSERTION_SORT_START(SORT_TYPE *dst, const size_t start, cons
     size_t location;
 
     /* If this entry is already correct, just move along */
-    if (SORT_CMP(dst[i - 1], dst[i]) <= 0) {
+    if (SORT_COMPARE(dst[i - 1], dst[i]) <= 0) {
       continue;
     }
 
     /* Else we need to find the right place, shift everything over, and squeeze in */
     x = dst[i];
-    location = BINARY_INSERTION_FIND(dst, x, i);
+    location = BINARY_INSERTION_FIND(dst, x, i, compare);
 
     for (j = i - 1; j >= location; j--) {
       dst[j + 1] = dst[j];
@@ -936,13 +943,13 @@ static void BINARY_INSERTION_SORT_START(SORT_TYPE *dst, const size_t start, cons
 }
 
 /* Binary insertion sort */
-SORT_DEF void BINARY_INSERTION_SORT(SORT_TYPE *dst, const size_t size) {
+SORT_DEF void BINARY_INSERTION_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   /* don't bother sorting an array of size <= 1 */
   if (size <= 1) {
     return;
   }
 
-  BINARY_INSERTION_SORT_START(dst, 1, size);
+  BINARY_INSERTION_SORT_START(dst, 1, size, compare);
 }
 
 /* In-place mergesort */
@@ -955,16 +962,16 @@ SORT_DEF void MERGE_SORT_IN_PLACE_ASWAP(SORT_TYPE * dst1, SORT_TYPE * dst2, size
 }
 
 SORT_DEF void MERGE_SORT_IN_PLACE_FRONTMERGE(SORT_TYPE *dst1, size_t l1, SORT_TYPE *dst2,
-    size_t l2) {
+    size_t l2, sort_compare_t compare) {
   SORT_TYPE *dst0 = dst2 - l1;
 
-  if (SORT_CMP(dst1[l1 - 1], dst2[0]) <= 0) {
+  if (SORT_COMPARE(dst1[l1 - 1], dst2[0]) <= 0) {
     MERGE_SORT_IN_PLACE_ASWAP(dst1, dst0, l1);
     return;
   }
 
   do {
-    while (SORT_CMP(*dst2, *dst1) > 0) {
+    while (SORT_COMPARE(*dst2, *dst1) > 0) {
       SORT_SWAP(*dst1, *dst0);
       dst1++;
       dst0++;
@@ -987,17 +994,17 @@ SORT_DEF void MERGE_SORT_IN_PLACE_FRONTMERGE(SORT_TYPE *dst1, size_t l1, SORT_TY
 }
 
 SORT_DEF size_t MERGE_SORT_IN_PLACE_BACKMERGE(SORT_TYPE * dst1, size_t l1, SORT_TYPE * dst2,
-    size_t l2) {
+    size_t l2, sort_compare_t compare) {
   size_t res;
   SORT_TYPE *dst0 = dst2 + l1;
 
-  if (SORT_CMP(dst1[1 - l1], dst2[0]) >= 0) {
+  if (SORT_COMPARE(dst1[1 - l1], dst2[0]) >= 0) {
     MERGE_SORT_IN_PLACE_ASWAP(dst1 - l1 + 1, dst0 - l1 + 1, l1);
     return l1;
   }
 
   do {
-    while (SORT_CMP(*dst2, *dst1) < 0) {
+    while (SORT_COMPARE(*dst2, *dst1) < 0) {
       SORT_SWAP(*dst1, *dst0);
       dst1--;
       dst0--;
@@ -1024,11 +1031,11 @@ SORT_DEF size_t MERGE_SORT_IN_PLACE_BACKMERGE(SORT_TYPE * dst1, size_t l1, SORT_
 }
 
 /* merge dst[p0..p1) by buffer dst[p1..p1+r) */
-SORT_DEF void MERGE_SORT_IN_PLACE_RMERGE(SORT_TYPE *dst, size_t len, size_t lp, size_t r) {
+SORT_DEF void MERGE_SORT_IN_PLACE_RMERGE(SORT_TYPE *dst, size_t len, size_t lp, size_t r, sort_compare_t compare) {
   size_t i, lq;
   int cv;
 
-  if (SORT_CMP(dst[lp], dst[lp - 1]) >= 0) {
+  if (SORT_COMPARE(dst[lp], dst[lp - 1]) >= 0) {
     return;
   }
 
@@ -1039,10 +1046,10 @@ SORT_DEF void MERGE_SORT_IN_PLACE_RMERGE(SORT_TYPE *dst, size_t len, size_t lp, 
     size_t q = i, j;
 
     for (j = lp; j <= lq; j += r) {
-      cv = SORT_CMP(dst[j], dst[q]);
+      cv = SORT_COMPARE(dst[j], dst[q]);
 
       if (cv == 0) {
-        cv = SORT_CMP(dst[j + r - 1], dst[q + r - 1]);
+        cv = SORT_COMPARE(dst[j + r - 1], dst[q + r - 1]);
       }
 
       if (cv < 0) {
@@ -1058,10 +1065,10 @@ SORT_DEF void MERGE_SORT_IN_PLACE_RMERGE(SORT_TYPE *dst, size_t len, size_t lp, 
       }
     }
 
-    if (i != 0 && SORT_CMP(dst[i], dst[i - 1]) < 0) {
+    if (i != 0 && SORT_COMPARE(dst[i], dst[i - 1]) < 0) {
       MERGE_SORT_IN_PLACE_ASWAP(dst + len, dst + i, r); /* swap current position with buffer */
       MERGE_SORT_IN_PLACE_BACKMERGE(dst + (len + r - 1), r, dst + (i - 1),
-                                    r);  /* buffer :merge: dst[i-r..i) -> dst[i-r..i+r) */
+                                    r, compare);  /* buffer :merge: dst[i-r..i) -> dst[i-r..i+r) */
     }
 
     if (lp == i) {
@@ -1071,7 +1078,7 @@ SORT_DEF void MERGE_SORT_IN_PLACE_RMERGE(SORT_TYPE *dst, size_t len, size_t lp, 
 }
 
 /* In-place Merge Sort implementation. (c)2012, Andrey Astrelin, astrelin@tochka.ru */
-SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t len) {
+SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t len, sort_compare_t compare) {
   /* don't bother sorting an array of size <= 1 */
   size_t r = rbnd(len);
   size_t lr = (len / r - 1) * r;
@@ -1083,14 +1090,14 @@ SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t len) {
   }
 
   if (len <= SMALL_SORT_BND) {
-    SMALL_SORT(dst, len);
+    SMALL_SORT(dst, len, compare);
     return;
   }
 
   for (p = 2; p <= lr; p += 2) {
     dst1 += 2;
 
-    if (SORT_CMP(dst1[0], dst1[-1]) < 0) {
+    if (SORT_COMPARE(dst1[0], dst1[-1]) < 0) {
       SORT_SWAP(dst1[0], dst1[-1]);
     }
 
@@ -1102,7 +1109,7 @@ SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t len) {
     q = 2;
 
     while ((p & q) == 0) {
-      if (SORT_CMP(dst1[1 - q], dst1[-(int) q]) < 0) {
+      if (SORT_COMPARE(dst1[1 - q], dst1[-(int) q]) < 0) {
         break;
       }
 
@@ -1125,11 +1132,11 @@ SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t len) {
         }
 
         p0 = len - q1;
-        MERGE_SORT_IN_PLACE_FRONTMERGE(dst + (p - q1), q, dst + p0 + q, q);
+        MERGE_SORT_IN_PLACE_FRONTMERGE(dst + (p - q1), q, dst + p0 + q, q, compare);
         q = q1;
       }
 
-      MERGE_SORT_IN_PLACE_BACKMERGE(dst + (len - 1), q, dst1 - q, q);
+      MERGE_SORT_IN_PLACE_BACKMERGE(dst + (len - 1), q, dst1 - q, q, compare);
       q *= 2;
     }
 
@@ -1141,7 +1148,7 @@ SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t len) {
 
     while ((q & p) == 0) {
       q *= 2;
-      MERGE_SORT_IN_PLACE_RMERGE(dst + (p - q), q, q / 2, q1);
+      MERGE_SORT_IN_PLACE_RMERGE(dst + (p - q), q, q / 2, q1, compare);
     }
   }
 
@@ -1152,20 +1159,20 @@ SORT_DEF void MERGE_SORT_IN_PLACE(SORT_TYPE *dst, const size_t len) {
       q1 += q;
 
       if (q1 != q) {
-        MERGE_SORT_IN_PLACE_RMERGE(dst + (lr - q1), q1, q, r);
+        MERGE_SORT_IN_PLACE_RMERGE(dst + (lr - q1), q1, q, r, compare);
       }
     }
   }
 
   m = len - lr;
-  MERGE_SORT_IN_PLACE(dst + lr, m);
+  MERGE_SORT_IN_PLACE(dst + lr, m, compare);
   MERGE_SORT_IN_PLACE_ASWAP(dst, dst + lr, m);
-  m += MERGE_SORT_IN_PLACE_BACKMERGE(dst + (m - 1), m, dst + (lr - 1), lr - m);
-  MERGE_SORT_IN_PLACE(dst, m);
+  m += MERGE_SORT_IN_PLACE_BACKMERGE(dst + (m - 1), m, dst + (lr - 1), lr - m, compare);
+  MERGE_SORT_IN_PLACE(dst, m, compare);
 }
 
 /* Standard merge sort */
-SORT_DEF void MERGE_SORT_RECURSIVE(SORT_TYPE *newdst, SORT_TYPE *dst, const size_t size) {
+SORT_DEF void MERGE_SORT_RECURSIVE(SORT_TYPE *newdst, SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   const size_t middle = size / 2;
   size_t out = 0;
   size_t i = 0;
@@ -1177,17 +1184,17 @@ SORT_DEF void MERGE_SORT_RECURSIVE(SORT_TYPE *newdst, SORT_TYPE *dst, const size
   }
 
   if (size <= SMALL_SORT_BND) {
-    SMALL_STABLE_SORT(dst, size);
+    SMALL_STABLE_SORT(dst, size, compare);
     return;
   }
 
-  MERGE_SORT_RECURSIVE(newdst, dst, middle);
-  MERGE_SORT_RECURSIVE(newdst, &dst[middle], size - middle);
+  MERGE_SORT_RECURSIVE(newdst, dst, middle, compare);
+  MERGE_SORT_RECURSIVE(newdst, &dst[middle], size - middle, compare);
 
   while (out != size) {
     if (i < middle) {
       if (j < size) {
-        if (SORT_CMP(dst[i], dst[j]) <= 0) {
+        if (SORT_COMPARE(dst[i], dst[j]) <= 0) {
           newdst[out] = dst[i++];
         } else {
           newdst[out] = dst[j++];
@@ -1206,7 +1213,7 @@ SORT_DEF void MERGE_SORT_RECURSIVE(SORT_TYPE *newdst, SORT_TYPE *dst, const size
 }
 
 /* Standard merge sort */
-SORT_DEF void MERGE_SORT(SORT_TYPE *dst, const size_t size) {
+SORT_DEF void MERGE_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   SORT_TYPE *newdst;
 
   /* don't bother sorting an array of size <= 1 */
@@ -1215,18 +1222,18 @@ SORT_DEF void MERGE_SORT(SORT_TYPE *dst, const size_t size) {
   }
 
   if (size <= SMALL_SORT_BND) {
-    SMALL_STABLE_SORT(dst, size);
+    SMALL_STABLE_SORT(dst, size, compare);
     return;
   }
 
   newdst = SORT_NEW_BUFFER(size);
-  MERGE_SORT_RECURSIVE(newdst, dst, size);
+  MERGE_SORT_RECURSIVE(newdst, dst, size, compare);
   SORT_DELETE_BUFFER(newdst);
 }
 
 
 static __inline size_t QUICK_SORT_PARTITION(SORT_TYPE *dst, const size_t left,
-    const size_t right, const size_t pivot) {
+    const size_t right, const size_t pivot, sort_compare_t compare) {
   SORT_TYPE value = dst[pivot];
   size_t index = left;
   size_t i;
@@ -1235,7 +1242,7 @@ static __inline size_t QUICK_SORT_PARTITION(SORT_TYPE *dst, const size_t left,
   SORT_SWAP(dst[pivot], dst[right]);
 
   for (i = left; i < right; i++) {
-    int cmp = SORT_CMP(dst[i], value);
+    int cmp = SORT_COMPARE(dst[i], value);
     /* check if everything is all the same */
     not_all_same |= cmp;
 
@@ -1268,10 +1275,10 @@ static __inline size_t QUICK_SORT_HOARE_PARTITION(SORT_TYPE *dst, const size_t l
   value = dst[l];
 
   while (1) {
-    while (SORT_CMP(dst[i], value) < 0) {
+    while (SORT_SORT_COMPARE(dst[i], value) < 0) {
       i++;
     }
-    while (SORT_CMP(value, dst[j]) < 0) {
+    while (SORT_SORT_COMPARE(value, dst[j]) < 0) {
       j--;
     }
     if (j <= i) {
@@ -1289,19 +1296,19 @@ static __inline size_t QUICK_SORT_HOARE_PARTITION(SORT_TYPE *dst, const size_t l
 
 /* Return the median index of the objects at the three indices. */
 static __inline size_t MEDIAN(const SORT_TYPE *dst, const size_t a, const size_t b,
-                              const size_t c) {
-  const int AB = SORT_CMP(dst[a], dst[b]) < 0;
+                              const size_t c, sort_compare_t compare) {
+  const int AB = SORT_COMPARE(dst[a], dst[b]) < 0;
 
   if (AB) {
     /* a < b */
-    const int BC = SORT_CMP(dst[b], dst[c]) < 0;
+    const int BC = SORT_COMPARE(dst[b], dst[c]) < 0;
 
     if (BC) {
       /* a < b < c */
       return b;
     } else {
       /* a < b, c < b */
-      const int AC = SORT_CMP(dst[a], dst[c]) < 0;
+      const int AC = SORT_COMPARE(dst[a], dst[c]) < 0;
 
       if (AC) {
         /* a < c < b */
@@ -1313,14 +1320,14 @@ static __inline size_t MEDIAN(const SORT_TYPE *dst, const size_t a, const size_t
     }
   } else {
     /* b < a */
-    const int AC = SORT_CMP(dst[a], dst[b]) < 0;
+    const int AC = SORT_COMPARE(dst[a], dst[b]) < 0;
 
     if (AC) {
       /* b < a < c */
       return a;
     } else {
       /* b < a, c < a */
-      const int BC = SORT_CMP(dst[b], dst[c]) < 0;
+      const int BC = SORT_COMPARE(dst[b], dst[c]) < 0;
 
       if (BC) {
         /* b < c < a */
@@ -1334,7 +1341,7 @@ static __inline size_t MEDIAN(const SORT_TYPE *dst, const size_t a, const size_t
 }
 
 static void QUICK_SORT_RECURSIVE(SORT_TYPE *dst, const size_t original_left,
-                                 const size_t original_right) {
+                                 const size_t original_right, sort_compare_t compare) {
   size_t left;
   size_t right;
   size_t pivot;
@@ -1351,22 +1358,22 @@ static void QUICK_SORT_RECURSIVE(SORT_TYPE *dst, const size_t original_left,
     }
 
     if ((right - left + 1U) <= SMALL_SORT_BND) {
-      SMALL_SORT(&dst[left], right - left + 1U);
+      SMALL_SORT(&dst[left], right - left + 1U, compare);
       return;
     }
 
     if (++loop_count >= max_loops) {
       /* we have recursed / looped too many times; switch to heap sort */
-      HEAP_SORT(&dst[left], right - left + 1U);
+      HEAP_SORT(&dst[left], right - left + 1U, compare);
       return;
     }
 
     /* median of 5 */
     middle = left + ((right - left) >> 1);
-    pivot = MEDIAN((const SORT_TYPE *) dst, left, middle, right);
+    pivot = MEDIAN((const SORT_TYPE *) dst, left, middle, right, compare);
     pivot = MEDIAN((const SORT_TYPE *) dst, left + ((middle - left) >> 1), pivot,
-                   middle + ((right - middle) >> 1));
-    new_pivot = QUICK_SORT_PARTITION(dst, left, right, pivot);
+                   middle + ((right - middle) >> 1), compare);
+    new_pivot = QUICK_SORT_PARTITION(dst, left, right, pivot, compare);
 
     /* check for partition all equal */
     if (new_pivot == SIZE_MAX) {
@@ -1377,25 +1384,25 @@ static void QUICK_SORT_RECURSIVE(SORT_TYPE *dst, const size_t original_left,
     /* and manually do tail call on the large part */
     if (new_pivot - 1U - left > right - new_pivot - 1U) {
       /* left is bigger than right */
-      QUICK_SORT_RECURSIVE(dst, new_pivot + 1U, right);
+      QUICK_SORT_RECURSIVE(dst, new_pivot + 1U, right, compare);
       /* tail call for left */
       right = new_pivot - 1U;
     } else {
       /* right is bigger than left */
-      QUICK_SORT_RECURSIVE(dst, left, new_pivot - 1U);
+      QUICK_SORT_RECURSIVE(dst, left, new_pivot - 1U, compare);
       /* tail call for right */
       left = new_pivot + 1U;
     }
   }
 }
 
-void QUICK_SORT(SORT_TYPE *dst, const size_t size) {
+void QUICK_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   /* don't bother sorting an array of size 1 */
   if (size <= 1) {
     return;
   }
 
-  QUICK_SORT_RECURSIVE(dst, 0U, size - 1U);
+  QUICK_SORT_RECURSIVE(dst, 0U, size - 1U, compare);
 }
 
 
@@ -1413,7 +1420,7 @@ static __inline void REVERSE_ELEMENTS(SORT_TYPE *dst, size_t start, size_t end) 
   }
 }
 
-static size_t COUNT_RUN(SORT_TYPE *dst, const size_t start, const size_t size) {
+static size_t COUNT_RUN(SORT_TYPE *dst, const size_t start, const size_t size, sort_compare_t compare) {
   size_t curr;
 
   if (size - start == 1) {
@@ -1421,7 +1428,7 @@ static size_t COUNT_RUN(SORT_TYPE *dst, const size_t start, const size_t size) {
   }
 
   if (start >= size - 2) {
-    if (SORT_CMP(dst[size - 2], dst[size - 1]) > 0) {
+    if (SORT_COMPARE(dst[size - 2], dst[size - 1]) > 0) {
       SORT_SWAP(dst[size - 2], dst[size - 1]);
     }
 
@@ -1430,14 +1437,14 @@ static size_t COUNT_RUN(SORT_TYPE *dst, const size_t start, const size_t size) {
 
   curr = start + 2;
 
-  if (SORT_CMP(dst[start], dst[start + 1]) <= 0) {
+  if (SORT_COMPARE(dst[start], dst[start + 1]) <= 0) {
     /* increasing run */
     while (1) {
       if (curr == size - 1) {
         break;
       }
 
-      if (SORT_CMP(dst[curr - 1], dst[curr]) > 0) {
+      if (SORT_COMPARE(dst[curr - 1], dst[curr]) > 0) {
         break;
       }
 
@@ -1452,7 +1459,7 @@ static size_t COUNT_RUN(SORT_TYPE *dst, const size_t start, const size_t size) {
         break;
       }
 
-      if (SORT_CMP(dst[curr - 1], dst[curr]) <= 0) {
+      if (SORT_COMPARE(dst[curr - 1], dst[curr]) <= 0) {
         break;
       }
 
@@ -1515,7 +1522,7 @@ static void TIM_SORT_RESIZE(TEMP_STORAGE_T *store, const size_t new_size) {
 }
 
 static void TIM_SORT_MERGE(SORT_TYPE *dst, const TIM_SORT_RUN_T *stack, const int stack_curr,
-                           TEMP_STORAGE_T *store) {
+                           TEMP_STORAGE_T *store, sort_compare_t compare) {
   const size_t A = stack[stack_curr - 2].length;
   const size_t B = stack[stack_curr - 1].length;
   const size_t curr = stack[stack_curr - 2].start;
@@ -1532,7 +1539,7 @@ static void TIM_SORT_MERGE(SORT_TYPE *dst, const TIM_SORT_RUN_T *stack, const in
 
     for (k = curr; k < curr + A + B; k++) {
       if ((i < A) && (j < curr + A + B)) {
-        if (SORT_CMP(storage[i], dst[j]) <= 0) {
+        if (SORT_COMPARE(storage[i], dst[j]) <= 0) {
           dst[k] = storage[i++];
         } else {
           dst[k] = dst[j++];
@@ -1552,7 +1559,7 @@ static void TIM_SORT_MERGE(SORT_TYPE *dst, const TIM_SORT_RUN_T *stack, const in
 
     while (k-- > curr) {
       if ((i > 0) && (j > curr)) {
-        if (SORT_CMP(dst[j - 1], storage[i - 1]) > 0) {
+        if (SORT_COMPARE(dst[j - 1], storage[i - 1]) > 0) {
           dst[k] = dst[--j];
         } else {
           dst[k] = storage[--i];
@@ -1567,7 +1574,8 @@ static void TIM_SORT_MERGE(SORT_TYPE *dst, const TIM_SORT_RUN_T *stack, const in
 }
 
 static int TIM_SORT_COLLAPSE(SORT_TYPE *dst, TIM_SORT_RUN_T *stack, int stack_curr,
-                             TEMP_STORAGE_T *store, const size_t size) {
+                             TEMP_STORAGE_T *store, const size_t size,
+                             sort_compare_t compare) {
   while (1) {
     size_t A, B, C, D;
     int ABC, BCD, CD;
@@ -1579,14 +1587,14 @@ static int TIM_SORT_COLLAPSE(SORT_TYPE *dst, TIM_SORT_RUN_T *stack, int stack_cu
 
     /* if this is the last merge, just do it */
     if ((stack_curr == 2) && (stack[0].length + stack[1].length == size)) {
-      TIM_SORT_MERGE(dst, stack, stack_curr, store);
+      TIM_SORT_MERGE(dst, stack, stack_curr, store, compare);
       stack[0].length += stack[1].length;
       stack_curr--;
       break;
     }
     /* check if the invariant is off for a stack of 2 elements */
     else if ((stack_curr == 2) && (stack[0].length <= stack[1].length)) {
-      TIM_SORT_MERGE(dst, stack, stack_curr, store);
+      TIM_SORT_MERGE(dst, stack, stack_curr, store, compare);
       stack[0].length += stack[1].length;
       stack_curr--;
       break;
@@ -1615,13 +1623,13 @@ static int TIM_SORT_COLLAPSE(SORT_TYPE *dst, TIM_SORT_RUN_T *stack, int stack_cu
 
     /* left merge */
     if (BCD && !CD) {
-      TIM_SORT_MERGE(dst, stack, stack_curr - 1, store);
+      TIM_SORT_MERGE(dst, stack, stack_curr - 1, store, compare);
       stack[stack_curr - 3].length += stack[stack_curr - 2].length;
       stack[stack_curr - 2] = stack[stack_curr - 1];
       stack_curr--;
     } else {
       /* right merge */
-      TIM_SORT_MERGE(dst, stack, stack_curr, store);
+      TIM_SORT_MERGE(dst, stack, stack_curr, store, compare);
       stack[stack_curr - 2].length += stack[stack_curr - 1].length;
       stack_curr--;
     }
@@ -1636,8 +1644,10 @@ static __inline int PUSH_NEXT(SORT_TYPE *dst,
                               const size_t minrun,
                               TIM_SORT_RUN_T *run_stack,
                               size_t *stack_curr,
-                              size_t *curr) {
-  size_t len = COUNT_RUN(dst, *curr, size);
+                              size_t *curr,
+                              sort_compare_t compare
+                              ) {
+  size_t len = COUNT_RUN(dst, *curr, size, compare);
   size_t run = minrun;
 
   if (run > size - *curr) {
@@ -1645,7 +1655,7 @@ static __inline int PUSH_NEXT(SORT_TYPE *dst,
   }
 
   if (run > len) {
-    BINARY_INSERTION_SORT_START(&dst[*curr], len, run);
+    BINARY_INSERTION_SORT_START(&dst[*curr], len, run, compare);
     len = run;
   }
 
@@ -1657,7 +1667,7 @@ static __inline int PUSH_NEXT(SORT_TYPE *dst,
   if (*curr == size) {
     /* finish up */
     while (*stack_curr > 1) {
-      TIM_SORT_MERGE(dst, run_stack, (int)*stack_curr, store);
+      TIM_SORT_MERGE(dst, run_stack, (int)*stack_curr, store, compare);
       run_stack[*stack_curr - 2].length += run_stack[*stack_curr - 1].length;
       (*stack_curr)--;
     }
@@ -1673,7 +1683,7 @@ static __inline int PUSH_NEXT(SORT_TYPE *dst,
   return 1;
 }
 
-SORT_DEF void TIM_SORT(SORT_TYPE *dst, const size_t size) {
+SORT_DEF void TIM_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   size_t minrun;
   TEMP_STORAGE_T _store, *store;
   TIM_SORT_RUN_T run_stack[TIM_SORT_STACK_SIZE];
@@ -1686,7 +1696,7 @@ SORT_DEF void TIM_SORT(SORT_TYPE *dst, const size_t size) {
   }
 
   if (size < 64) {
-    SMALL_STABLE_SORT(dst, size);
+    SMALL_STABLE_SORT(dst, size, compare);
     return;
   }
 
@@ -1697,25 +1707,25 @@ SORT_DEF void TIM_SORT(SORT_TYPE *dst, const size_t size) {
   store->alloc = 0;
   store->storage = NULL;
 
-  if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr)) {
+  if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr, compare)) {
     return;
   }
 
-  if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr)) {
+  if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr, compare)) {
     return;
   }
 
-  if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr)) {
+  if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr, compare)) {
     return;
   }
 
   while (1) {
     if (!CHECK_INVARIANT(run_stack, (int)stack_curr)) {
-      stack_curr = TIM_SORT_COLLAPSE(dst, run_stack, (int)stack_curr, store, size);
+      stack_curr = TIM_SORT_COLLAPSE(dst, run_stack, (int)stack_curr, store, size, compare);
       continue;
     }
 
-    if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr)) {
+    if (!PUSH_NEXT(dst, size, store, minrun, run_stack, &stack_curr, &curr, compare)) {
       return;
     }
   }
@@ -1723,17 +1733,17 @@ SORT_DEF void TIM_SORT(SORT_TYPE *dst, const size_t size) {
 
 /* heap sort: based on wikipedia */
 
-static __inline void HEAP_SIFT_DOWN(SORT_TYPE *dst, const size_t start, const size_t end) {
+static __inline void HEAP_SIFT_DOWN(SORT_TYPE *dst, const size_t start, const size_t end, sort_compare_t compare) {
   size_t root = start;
 
   while ((root << 1) <= end) {
     size_t child = root << 1;
 
-    if ((child < end) && (SORT_CMP(dst[child], dst[child + 1]) < 0)) {
+    if ((child < end) && (SORT_COMPARE(dst[child], dst[child + 1]) < 0)) {
       child++;
     }
 
-    if (SORT_CMP(dst[root], dst[child]) < 0) {
+    if (SORT_COMPARE(dst[root], dst[child]) < 0) {
       SORT_SWAP(dst[root], dst[child]);
       root = child;
     } else {
@@ -1742,11 +1752,11 @@ static __inline void HEAP_SIFT_DOWN(SORT_TYPE *dst, const size_t start, const si
   }
 }
 
-static __inline void HEAPIFY(SORT_TYPE *dst, const size_t size) {
+static __inline void HEAPIFY(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   size_t start = size >> 1;
 
   while (1) {
-    HEAP_SIFT_DOWN(dst, start, size - 1);
+    HEAP_SIFT_DOWN(dst, start, size - 1, compare);
 
     if (start == 0) {
       break;
@@ -1756,7 +1766,7 @@ static __inline void HEAPIFY(SORT_TYPE *dst, const size_t size) {
   }
 }
 
-SORT_DEF void HEAP_SORT(SORT_TYPE *dst, const size_t size) {
+SORT_DEF void HEAP_SORT(SORT_TYPE *dst, const size_t size, sort_compare_t compare) {
   size_t end = size - 1;
 
   /* don't bother sorting an array of size <= 1 */
@@ -1764,11 +1774,11 @@ SORT_DEF void HEAP_SORT(SORT_TYPE *dst, const size_t size) {
     return;
   }
 
-  HEAPIFY(dst, size);
+  HEAPIFY(dst, size, compare);
 
   while (end > 0) {
     SORT_SWAP(dst[end], dst[0]);
-    HEAP_SIFT_DOWN(dst, 0, end - 1);
+    HEAP_SIFT_DOWN(dst, 0, end - 1, compare);
     end--;
   }
 }

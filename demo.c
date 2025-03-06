@@ -14,7 +14,7 @@
 #define SORT_CMP(x, y) (x - y)
 #define MAX(x,y) (((x) > (y) ? (x) : (y)))
 #define MIN(x,y) (((x) < (y) ? (x) : (y)))
-#define SORT_CSWAP(x, y) {SORT_TYPE _sort_swap_temp = MAX((x), (y)); (x) = MIN((x),(y)); (y) = _sort_swap_temp;}
+#define SORT_CSWAP(compare, x, y) {SORT_TYPE _sort_swap_temp = MAX((x), (y)); (x) = MIN((x),(y)); (y) = _sort_swap_temp;}
 #ifdef SET_SORT_EXTRA
 #define SORT_EXTRA
 #endif
@@ -138,7 +138,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_quick_sort(dst, SIZE);
+    sorter_quick_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -153,7 +153,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_selection_sort(dst, SIZE);
+    sorter_selection_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -167,7 +167,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_bubble_sort(dst, SIZE);
+    sorter_bubble_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -182,7 +182,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_bitonic_sort(dst, SIZE);
+    sorter_bitonic_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -196,7 +196,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_merge_sort(dst, SIZE);
+    sorter_merge_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -210,7 +210,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_binary_insertion_sort(dst, SIZE);
+    sorter_binary_insertion_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -224,7 +224,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_heap_sort(dst, SIZE);
+    sorter_heap_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -238,7 +238,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_shell_sort(dst, SIZE);
+    sorter_shell_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -252,7 +252,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_tim_sort(dst, SIZE);
+    sorter_tim_sort(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);
@@ -266,7 +266,7 @@ void run_tests(void) {
     fill(arr, SIZE);
     memcpy(dst, arr, sizeof(int64_t) * SIZE);
     start_time = utime();
-    sorter_merge_sort_in_place(dst, SIZE);
+    sorter_merge_sort_in_place(dst, SIZE, simple_cmp);
     end_time = utime();
     total_time += end_time - start_time;
     verify(dst, SIZE);

@@ -5,7 +5,7 @@
 
 #define SORT_NAME sorter
 #define SORT_TYPE int64_t
-#define SORT_CMP(x, y) ((x) - (y))
+/* #define SORT_CMP(x, y) ((x) - (y)) */
 #ifdef SET_SORT_EXTRA
 #define SORT_EXTRA
 #endif
@@ -13,7 +13,7 @@
 
 #define SORT_NAME stable
 #define SORT_TYPE int*
-#define SORT_CMP(x, y) (*(x) - *(y))
+/* #define SORT_CMP(x, y) (*(x) - *(y)) */
 #ifdef SET_SORT_EXTRA
 #define SORT_EXTRA
 #endif
@@ -56,7 +56,13 @@ char *test_names[FILL_LAST_ELEMENT] = {
 static __inline int simple_cmp(const void *a, const void *b) {
   const int64_t da = *((const int64_t *) a);
   const int64_t db = *((const int64_t *) b);
-  return (da < db) ? -1 : (da == db) ? 0 : 1;
+  return da - db;
+}
+
+static __inline int simple_compare(const void *a, const void *b) {
+  const int64_t da = ((const int64_t) a);
+  const int64_t db = ((const int64_t) b);
+  return da - db;
 }
 
 #ifdef _WIN32
@@ -232,7 +238,7 @@ static void fill(int64_t *dst, const int size, int type) {
     int64_t size = sizes[test]; \
     fill(dst, size, type); \
     usec1 = utime(); \
-    sorter_ ## name (dst, size); \
+    sorter_ ## name (dst, size, simple_compare); \
     usec2 = utime(); \
     res = verify(dst, size); \
     if (!res) { \
@@ -356,10 +362,10 @@ int verify_stable(int **array, int64_t size, int num_values) {
 }
 
 /* Checks that given sort function is stable. */
-void check_stable(char *name, void (*sort_fun)(int **arr, size_t size), int size, int num_values) {
+void check_stable(char *name, void (*sort_fun)(int **arr, size_t size, sort_compare_t cmp), int size, int num_values) {
   int **array = malloc(sizeof(int *) * size);
   make_intp_array(array, size, num_values);
-  sort_fun(array, size);
+  sort_fun(array, size, simple_cmp);
   printf("%21s -- %s\n", name, verify_stable(array, size, num_values) ? "stable" : "UNSTABLE");
   clean_intp_array(array, size);
   free(array);
